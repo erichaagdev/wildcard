@@ -21,9 +21,10 @@ class CommandLineConfigurationService(
 
         return Configuration(
             bucket = mutableArguments.bucket!!,
-            email = mutableArguments.email!!,
             domain = mutableArguments.domain!!,
+            email = mutableArguments.email!!,
             location = mutableArguments.location,
+            production = mutableArguments.production
         )
     }
 
@@ -40,5 +41,8 @@ class CommandLineConfigurationService(
 
         @field:Parameter(names = ["-l", "--location"], required = false, description = "Location for files")
         var location: String? = null,
+
+        @field:Parameter(names = ["--production"], required = false, description = "Generate a production certificate")
+        var production: Boolean = false,
     )
 }

@@ -49,7 +49,7 @@ class DefaultAcmeService(
         }
 
         while (order.status != Status.VALID) {
-            log.debug("Finalization for '$domain' in progress...")
+            log.info("Finalization for '$domain' in progress...")
             Thread.sleep(10000)
             try { order.update() } catch (_: AcmeRetryAfterException) { }
         }

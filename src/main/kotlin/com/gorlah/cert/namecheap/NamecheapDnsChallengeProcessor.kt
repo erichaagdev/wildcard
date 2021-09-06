@@ -23,24 +23,24 @@ class NamecheapDnsChallengeProcessor(
             ttl = 60
         )
         val dnsHosts = client.getDnsHosts(domain).plus(txt)
-        log.debug("Adding TXT record for '$acmeChallenge.$domain' with value '${txt.address}'")
+        log.info("Adding TXT record for '$acmeChallenge.$domain' with value '${txt.address}'")
         client.setDnsHosts(domain, dnsHosts)
 
         while (dnsClient.resolveTxt("$acmeChallenge.$domain").none { it.data == challenge.digest }) {
-            log.debug("TXT record for '$acmeChallenge.$domain' in progress...")
+            log.info("TXT record for '$acmeChallenge.$domain' in progress...")
             Thread.sleep(10000)
         }
-        log.debug("TXT record for '$acmeChallenge.$domain' finished")
+        log.info("TXT record for '$acmeChallenge.$domain' finished")
 
         challenge.trigger()
-        log.debug("Triggered DNS challenge for '$acmeChallenge.$domain'")
+        log.info("Triggered DNS challenge for '$acmeChallenge.$domain'")
     }
 
     override fun cleanup(domain: String, challenge: Dns01Challenge) {
         val dnsHosts = client.getDnsHosts(domain)
             .filter { it.name != acmeChallenge && it.address != challenge.digest }
-        log.debug("Removing TXT record for '$acmeChallenge.$domain' with value '${challenge.digest}'")
+        log.info("Removing TXT record for '$acmeChallenge.$domain' with value '${challenge.digest}'")
         client.setDnsHosts(domain, dnsHosts)
-        log.debug("Removed TXT record for '$acmeChallenge.$domain' with value '${challenge.digest}'")
+        log.info("Removed TXT record for '$acmeChallenge.$domain' with value '${challenge.digest}'")
     }
 }

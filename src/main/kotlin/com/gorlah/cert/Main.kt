@@ -18,22 +18,43 @@ class Main
 
 private val log = logger(Main::class)
 
-private val dnsClient = GoogleDnsClient.getDefaultInstance()
-private val dnsChallengeProcessor: DnsChallengeProcessor = NamecheapDnsChallengeProcessor(dnsClient)
-private val authorizationProcessor: AuthorizationProcessor = DefaultAuthorizationProcessor(dnsChallengeProcessor)
+private lateinit var configurationService: ConfigurationService
 
 private lateinit var acmeService: AcmeService
 private lateinit var authenticationService: AuthenticationService
+private lateinit var authorizationProcessor: AuthorizationProcessor
+private lateinit var dnsChallengeProcessor: DnsChallengeProcessor
+private lateinit var dnsClient: DnsClient
+private lateinit var fileRepository: FileRepository
+private lateinit var keyPairGenerator: KeyPairGenerator
 
 fun main(arguments: Array<String>) {
-    val configuration = CommandLineConfigurationService(arguments).load() ?: return
-    val fileRepository: FileRepository = GoogleFileRepository(configuration.bucket, configuration.location ?: "")
-    val keyPairGenerator: KeyPairGenerator = RSAKeyPairGenerator()
-    val session = Session("acme://letsencrypt.org/staging")
+    configurationService = initializeConfigurationService(arguments)
+    val configuration = configurationService.load() ?: return
+    initializeServices(configuration)
+    processOrder(configuration.domain)
+}
+
+private fun initializeConfigurationService(arguments: Array<String>): ConfigurationService {
+    return CommandLineConfigurationService(arguments)
+}
+
+private fun initializeServices(configuration: Configuration) {
+    dnsClient = GoogleDnsClient.getDefaultInstance()
+    dnsChallengeProcessor = NamecheapDnsChallengeProcessor(dnsClient)
+    authorizationProcessor = DefaultAuthorizationProcessor(dnsChallengeProcessor)
+
+    fileRepository = GoogleFileRepository(configuration.bucket, configuration.location ?: "")
+    keyPairGenerator = RSAKeyPairGenerator()
+    val session = fetchSession(configuration.production)
     authenticationService = DefaultAuthenticationService(fileRepository, keyPairGenerator, session)
+
     val login = fetchLogin(configuration.email)
     acmeService = DefaultAcmeService(fileRepository, keyPairGenerator, login)
-    processOrder(configuration.domain)
+}
+
+fun fetchSession(production: Boolean): Session {
+    return if (production) Session("acme://letsencrypt.org") else Session("acme://letsencrypt.org/staging")
 }
 
 private fun processOrder(domain: String): Order? {
@@ -68,25 +89,25 @@ private fun fetchLogin(email: String): Login {
     log.info("Logging in with account '$email'")
     val login = authenticationService.login(email)
     return if (login == null) {
-        log.debug("Account for '$email' not found")
-        log.debug("Creating account for '$email'")
+        log.info("Account for '$email' not found")
+        log.info("Creating account for '$email'")
         authenticationService.createAccount(email).apply {
-            log.debug("Account created for '$email' with location '$accountLocation'")
+            log.info("Account created for '$email' with location '$accountLocation'")
         }
     } else {
-        log.debug("Logged in with account for '$email' with location '${login.accountLocation}'")
+        log.info("Logged in with account for '$email' with location '${login.accountLocation}'")
         login
     }
 }
 
 private fun fetchOrder(domain: String): Order {
-    log.debug("Fetching order for '$domain'")
+    log.info("Fetching order for '$domain'")
     val order = acmeService.getOrder(domain)
     return if (order == null) {
-        log.debug("Order for '$domain' not found")
+        log.info("Order for '$domain' not found")
         log.info("Creating order for '$domain'")
         acmeService.createOrder(domain).apply {
-            log.debug("Order created for '$domain' with location '$location'")
+            log.info("Order created for '$domain' with location '$location'")
         }
     } else {
         log.info("Found order for '$domain' with status '${order.status}'")
@@ -111,7 +132,7 @@ private fun processAuthorization(authorization: Authorization) {
 private fun finalizeOrder(order: Order, domain: String) {
     log.info("Finalizing order for '$domain'")
     acmeService.finalizeOrder(order, domain)
-    log.debug("Order for '$domain' finished with status '${order.status}'")
+    log.info("Order for '$domain' finished with status '${order.status}'")
     val certificate = order.certificate?.certificate
     if (certificate != null) {
         val expiration = dateFormat(certificate.notAfter)

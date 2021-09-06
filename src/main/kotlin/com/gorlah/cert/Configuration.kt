@@ -5,4 +5,5 @@ data class Configuration(
     val domain: String,
     val email: String,
     val location: String?,
+    val production: Boolean,
 )

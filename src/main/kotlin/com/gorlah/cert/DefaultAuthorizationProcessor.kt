@@ -16,7 +16,7 @@ class DefaultAuthorizationProcessor(
     override fun process(authorization: Authorization) {
         dnsChallengeProcessor.process(authorization.identifier.domain, getDnsChallenge(authorization))
         while (authorization.status != Status.VALID) {
-            log.debug("Authorization for '${authorization.identifier.domain}' processing with status '${authorization.status}'...")
+            log.info("Authorization for '${authorization.identifier.domain}' processing with status '${authorization.status}'...")
             Thread.sleep(10000)
             try { authorization.update() } catch (_: AcmeRetryAfterException) { }
         }
