@@ -1,8 +1,8 @@
 package com.gorlah.cert.namecheap
 
-import com.gorlah.cert.acme.DnsChallengeProcessor
-import com.gorlah.cert.dns.DnsClient
-import com.gorlah.cert.util.logger
+import com.gorlah.cert.DnsChallengeProcessor
+import com.gorlah.cert.DnsClient
+import com.gorlah.cert.logger
 import org.shredzone.acme4j.challenge.Dns01Challenge
 
 class NamecheapDnsChallengeProcessor(

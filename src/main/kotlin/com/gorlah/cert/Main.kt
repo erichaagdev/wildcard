@@ -1,20 +1,8 @@
 package com.gorlah.cert
 
-import com.gorlah.cert.acme.AcmeService
-import com.gorlah.cert.acme.AuthenticationService
-import com.gorlah.cert.acme.AuthorizationProcessor
-import com.gorlah.cert.acme.DefaultAcmeService
-import com.gorlah.cert.acme.DefaultAuthenticationService
-import com.gorlah.cert.acme.DefaultAuthorizationProcessor
-import com.gorlah.cert.acme.DnsChallengeProcessor
-import com.gorlah.cert.configuration.CommandLineConfigurationService
-import com.gorlah.cert.dns.GoogleDnsClient
-import com.gorlah.cert.file.FileRepository
-import com.gorlah.cert.file.GoogleFileRepository
-import com.gorlah.cert.keypair.KeyPairGenerator
-import com.gorlah.cert.keypair.RSAKeyPairGenerator
+import com.gorlah.cert.google.GoogleDnsClient
+import com.gorlah.cert.google.GoogleFileRepository
 import com.gorlah.cert.namecheap.NamecheapDnsChallengeProcessor
-import com.gorlah.cert.util.logger
 import org.shredzone.acme4j.Authorization
 import org.shredzone.acme4j.Login
 import org.shredzone.acme4j.Order
