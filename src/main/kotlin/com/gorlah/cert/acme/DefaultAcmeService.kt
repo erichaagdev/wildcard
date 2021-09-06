@@ -23,7 +23,7 @@ class DefaultAcmeService(
     }
 
     override fun getOrder(domain: String): Order? {
-        val path = toPath(domain)
+        val path = toOrderPath(domain)
         val order = fileRepository.load(path.resolve("order.json"), OrderDocument::class) ?: return null
         return login.bindOrder(order.location)
     }
@@ -33,35 +33,44 @@ class DefaultAcmeService(
             .domain(domain)
             .domain("*.$domain")
             .create()
-        val path = toPath(domain)
+        val path = toOrderPath(domain)
         fileRepository.save(path.resolve("order.json"), OrderDocument(order.location))
         return order
     }
 
     override fun finalizeOrder(order: Order, domain: String) {
+        val certificatePath = toCertificatePath(domain)
         if (order.status != Status.VALID) {
-            val domainKeyPair = fileRepository.loadKeyPair(Paths.get("sites/$domain/privkey.pem")) ?: keyPairGenerator.generate()
+            val domainKeyPair = fileRepository.loadKeyPair(certificatePath.resolve("privkey.pem")) ?: keyPairGenerator.generate()
             val csr = CSRBuilder().apply {
                 addDomain(domain)
                 addDomain("*.$domain")
                 sign(domainKeyPair)
             }
-            fileRepository.saveKeyPair(Paths.get("sites/$domain/privkey.pem"), domainKeyPair)
+            fileRepository.saveKeyPair(certificatePath.resolve("privkey.pem"), domainKeyPair)
             order.execute(csr.encoded)
         }
 
         while (order.status != Status.VALID) {
-            log.info("Finalization for '$domain' in progress...")
+            log.debug("Finalization for '$domain' in progress...")
             Thread.sleep(10000)
             try { order.update() } catch (_: AcmeRetryAfterException) { }
         }
 
         val certificate = order.certificate ?: return
-        fileRepository.saveCertificateChain(Paths.get("sites/$domain/fullchain.pem"), certificate.certificateChain)
+        fileRepository.saveCertificateChain(certificatePath.resolve("fullchain.pem"), certificate.certificateChain)
     }
 
-    private fun toPath(domain: String): Path {
-        return Paths.get("orders/$domain")
+    private fun toOrderPath(domain: String): Path {
+        return toDomainPath(domain).resolve("orders/")
+    }
+
+    private fun toCertificatePath(domain: String): Path {
+        return toDomainPath(domain).resolve("certificates/")
+    }
+
+    private fun toDomainPath(domain: String): Path {
+        return Paths.get("domains/$domain/")
     }
 
     private data class OrderDocument(val location: URL)

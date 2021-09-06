@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.gorlah.cert.acme.DnsChallengeException
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -58,8 +59,20 @@ class NamecheapClient private constructor(
 
         return client.newCall(request).execute().use {
             val response = xmlMapper.readTree(it.body?.string())
-            val dnsHosts = response["CommandResponse"]["DomainDNSGetHostsResult"]["host"]
-            jsonMapper.convertValue(dnsHosts)
+            if (response["Status"].textValue() == "OK") {
+                val dnsHosts = response["CommandResponse"]["DomainDNSGetHostsResult"]["host"]
+                jsonMapper.convertValue(dnsHosts)
+            } else {
+                if (response["Status"].textValue() == "ERROR") {
+                    if (response["Errors"].any { error -> error["Number"].textValue() == "1011150" }) {
+                        throw DnsChallengeException("Error processing request for current IP of '$clientIp'. Verify whitelisted IPs at: https://ap.www.namecheap.com/settings/tools/apiaccess/whitelisted-ips")
+                    } else {
+                        throw DnsChallengeException("Error processing request")
+                    }
+                } else {
+                    throw DnsChallengeException("Unexpected error")
+                }
+            }
         }
     }
 

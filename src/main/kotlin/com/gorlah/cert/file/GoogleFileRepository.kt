@@ -13,7 +13,10 @@ import java.security.cert.Certificate
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.reflect.KClass
 
-class GoogleFileRepository(private val bucketName: String) : FileRepository {
+class GoogleFileRepository(
+    private val bucketName: String,
+    private val location: String,
+) : FileRepository {
 
     private companion object {
         val storage = StorageOptions.getDefaultInstance().service!!
@@ -91,6 +94,6 @@ class GoogleFileRepository(private val bucketName: String) : FileRepository {
     }
 
     private fun toBlobId(path: Path): BlobId {
-        return BlobId.of(bucketName, Path.of("wip").resolve(path).invariantSeparatorsPathString.substringAfter("./"))
+        return BlobId.of(bucketName, Path.of(location).resolve(path).invariantSeparatorsPathString.substringAfter("./"))
     }
 }

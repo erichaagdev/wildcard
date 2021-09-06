@@ -22,7 +22,8 @@ class CommandLineConfigurationService(
         return Configuration(
             bucket = mutableArguments.bucket!!,
             email = mutableArguments.email!!,
-            domain = mutableArguments.domain!!
+            domain = mutableArguments.domain!!,
+            location = mutableArguments.location,
         )
     }
 
@@ -36,5 +37,8 @@ class CommandLineConfigurationService(
 
         @field:Parameter(names = ["-d", "--domain"], required = true, description = "Domain to be certified")
         var domain: String? = null,
+
+        @field:Parameter(names = ["-l", "--location"], required = false, description = "Location for files")
+        var location: String? = null,
     )
 }

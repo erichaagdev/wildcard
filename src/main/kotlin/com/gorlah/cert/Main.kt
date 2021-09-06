@@ -39,7 +39,7 @@ private lateinit var authenticationService: AuthenticationService
 
 fun main(arguments: Array<String>) {
     val configuration = CommandLineConfigurationService(arguments).load() ?: return
-    val fileRepository: FileRepository = GoogleFileRepository(configuration.bucket)
+    val fileRepository: FileRepository = GoogleFileRepository(configuration.bucket, configuration.location ?: "")
     val keyPairGenerator: KeyPairGenerator = RSAKeyPairGenerator()
     val session = Session("acme://letsencrypt.org/staging")
     authenticationService = DefaultAuthenticationService(fileRepository, keyPairGenerator, session)
@@ -80,28 +80,28 @@ private fun fetchLogin(email: String): Login {
     log.info("Logging in with account '$email'")
     val login = authenticationService.login(email)
     return if (login == null) {
-        log.info("Account for '$email' not found")
-        log.info("Creating account for '$email'")
+        log.debug("Account for '$email' not found")
+        log.debug("Creating account for '$email'")
         authenticationService.createAccount(email).apply {
-            log.info("Account created for '$email' with location '$accountLocation'")
+            log.debug("Account created for '$email' with location '$accountLocation'")
         }
     } else {
-        log.info("Logged in with account for '$email' with location '${login.accountLocation}'")
+        log.debug("Logged in with account for '$email' with location '${login.accountLocation}'")
         login
     }
 }
 
 private fun fetchOrder(domain: String): Order {
-    log.info("Fetching order for '$domain'")
+    log.debug("Fetching order for '$domain'")
     val order = acmeService.getOrder(domain)
     return if (order == null) {
-        log.info("Order for '$domain' not found")
+        log.debug("Order for '$domain' not found")
         log.info("Creating order for '$domain'")
         acmeService.createOrder(domain).apply {
-            log.info("Order created for '$domain' with location '$location'")
+            log.debug("Order created for '$domain' with location '$location'")
         }
     } else {
-        log.info("Found order for '$domain' with status '${order.status}' and location '${order.location}'")
+        log.info("Found order for '$domain' with status '${order.status}'")
         order
     }
 }
@@ -123,7 +123,7 @@ private fun processAuthorization(authorization: Authorization) {
 private fun finalizeOrder(order: Order, domain: String) {
     log.info("Finalizing order for '$domain'")
     acmeService.finalizeOrder(order, domain)
-    log.info("Order for '$domain' finished with status '${order.status}'")
+    log.debug("Order for '$domain' finished with status '${order.status}'")
     val certificate = order.certificate?.certificate
     if (certificate != null) {
         val expiration = dateFormat(certificate.notAfter)
